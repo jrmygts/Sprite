@@ -45,9 +45,13 @@ const ButtonAccount = () => {
       window.location.href = url;
     } catch (e) {
       console.error(e);
+      // If the error is about no billing account, redirect to pricing
+      if (e?.message?.includes("billing account")) {
+        window.location.href = "/pricing";
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

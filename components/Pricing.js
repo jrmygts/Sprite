@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import config from "@/config";
 import ButtonCheckout from "./ButtonCheckout";
 
@@ -6,14 +10,30 @@ import ButtonCheckout from "./ButtonCheckout";
 // <ButtonCheckout /> renders a button that will redirect the user to Stripe checkout called the /api/stripe/create-checkout API endpoint with the correct priceId
 
 const Pricing = () => {
+  const [redirectToGenerate, setRedirectToGenerate] = useState(false);
+  const searchParams = useSearchParams();
+  
+  // Check if we should redirect back to generate page after payment
+  useEffect(() => {
+    const fromGenerate = searchParams?.get('from') === 'generate';
+    setRedirectToGenerate(fromGenerate);
+  }, [searchParams]);
+
   return (
     <section className="bg-base-200 overflow-hidden" id="pricing">
       <div className="py-24 px-8 max-w-5xl mx-auto">
         <div className="flex flex-col text-center w-full mb-20">
           <p className="font-medium text-primary mb-8">Pricing</p>
           <h2 className="font-bold text-3xl lg:text-5xl tracking-tight">
-            Save hours of repetitive code and ship faster!
+            {redirectToGenerate 
+              ? "Subscribe to continue generating sprites" 
+              : "Choose your Sprite plan"}
           </h2>
+          {redirectToGenerate && (
+            <p className="mt-6 text-xl">
+              You've used all your free generations. Subscribe to get unlimited access.
+            </p>
+          )}
         </div>
 
         <div className="relative flex justify-center flex-col lg:flex-row items-center lg:items-stretch gap-8">
@@ -89,10 +109,14 @@ const Pricing = () => {
                   </ul>
                 )}
                 <div className="space-y-2">
-                  <ButtonCheckout priceId={plan.priceId} />
+                  <ButtonCheckout 
+                    priceId={plan.priceId} 
+                    label={plan.name === "Monthly" ? "Go Monthly $99" : "Go Annual $1000"} 
+                    redirectToGenerate={redirectToGenerate}
+                  />
 
                   <p className="flex items-center justify-center gap-2 text-sm text-center text-base-content/80 font-medium relative">
-                    Pay once. Access forever.
+                    {plan.name === "Monthly" ? "Billed monthly" : "Save $188 compared to monthly"}
                   </p>
                 </div>
               </div>

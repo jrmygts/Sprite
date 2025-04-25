@@ -19,47 +19,38 @@ const config = {
     plans: [
       {
         // REQUIRED — we use this to find the plan in the webhook (for instance if you want to update the user's credits based on the plan)
-        priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_1Niyy5AxyNprDp7iZIqEyD2h"
-            : "price_456",
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY,
         //  REQUIRED - Name of the plan, displayed on the pricing page
-        name: "Starter",
+        name: "Monthly",
         // A friendly description of the plan, displayed on the pricing page. Tip: explain why this plan and not others
-        description: "Perfect for small projects",
+        description: "Generate up to 100 sprites per month",
         // The price you want to display, the one user will be charged on Stripe.
-        price: 79,
-        // If you have an anchor price (i.e. $29) that you want to display crossed out, put it here. Otherwise, leave it empty
-        priceAnchor: 99,
+        price: 99,
         features: [
           {
-            name: "NextJS boilerplate",
+            name: "AI-generated game sprites",
           },
-          { name: "User oauth" },
-          { name: "Database" },
-          { name: "Emails" },
+          { name: "4 style presets" },
+          { name: "PNG with transparent background" },
+          { name: "100 generations per month" },
         ],
       },
       {
         // This plan will look different on the pricing page, it will be highlighted. You can only have one plan with isFeatured: true
         isFeatured: true,
-        priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_1O5KtcAxyNprDp7iftKnrrpw"
-            : "price_456",
-        name: "Advanced",
-        description: "You need more power",
-        price: 99,
-        priceAnchor: 149,
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ANNUAL,
+        name: "Annual",
+        description: "Best value for serious game developers",
+        price: 1000,
+        priceAnchor: 1188, // 12 x $99
         features: [
           {
-            name: "NextJS boilerplate",
+            name: "AI-generated game sprites",
           },
-          { name: "User oauth" },
-          { name: "Database" },
-          { name: "Emails" },
-          { name: "1 year of updates" },
-          { name: "24/7 support" },
+          { name: "4 style presets" },
+          { name: "PNG with transparent background" },
+          { name: "1,200 generations per year" },
+          { name: "Save $188 compared to monthly" },
         ],
       },
     ],

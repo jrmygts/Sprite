@@ -51,6 +51,8 @@ export async function POST(req) {
         const priceId = session?.line_items?.data[0]?.price.id;
         const userId = stripeObject.client_reference_id;
         const plan = configFile.stripe.plans.find((p) => p.priceId === priceId);
+        const subscription = stripeObject.subscription; // Get subscription ID
+        const subStatus = stripeObject.status; // Get status (should be 'complete')
 
         const customer = await stripe.customers.retrieve(customerId);
 
@@ -91,6 +93,8 @@ export async function POST(req) {
             customer_id: customerId,
             price_id: priceId,
             has_access: true,
+            subscription_status: subStatus,
+            subscription_id: subscription
           })
           .eq("id", user?.id);
 
@@ -127,7 +131,10 @@ export async function POST(req) {
 
         await supabase
           .from("profiles")
-          .update({ has_access: false })
+          .update({ 
+            has_access: false,
+            subscription_status: stripeObject.status
+          })
           .eq("customer_id", subscription.customer);
         break;
       }
@@ -158,14 +165,22 @@ export async function POST(req) {
         break;
       }
 
-      case "invoice.payment_failed":
+      case "invoice.payment_failed": {
         // A payment failed (for instance the customer does not have a valid payment method)
-        // ❌ Revoke access to the product
-        // ⏳ OR wait for the customer to pay (more friendly):
-        //      - Stripe will automatically email the customer (Smart Retries)
-        //      - We will receive a "customer.subscription.deleted" when all retries were made and the subscription has expired
+        // ❌ Revoke access to the product or wait for customer to pay
+        const stripeObject = event.data.object;
+        const customerId = stripeObject.customer;
 
+        await supabase
+          .from("profiles")
+          .update({ 
+            subscription_status: "past_due",
+            has_access: false 
+          })
+          .eq("customer_id", customerId);
+        
         break;
+      }
 
       default:
       // Unhandled event type

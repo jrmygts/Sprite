@@ -1,18 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/libs/supabase/client";
 import toast from "react-hot-toast";
 import config from "@/config";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // This a login/singup page for Supabase Auth.
 // Successfull login redirects to /api/auth/callback where the Code Exchange is processed (see app/api/auth/callback/route.js).
 export default function Login() {
   const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+  const [returnTo, setReturnTo] = useState("");
+
+  // Check if already logged in on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        console.log("User already logged in, redirecting");
+        const redirect = returnTo || config.auth.callbackUrl;
+        router.push(redirect);
+      }
+    };
+    
+    // Get the returnTo param if present
+    const returnPath = searchParams.get("returnTo");
+    if (returnPath) {
+      setReturnTo(returnPath);
+    }
+    
+    checkSession();
+  }, [supabase, router, searchParams, returnTo]);
 
   const handleSignup = async (e, options) => {
     e?.preventDefault();
@@ -21,7 +47,11 @@ export default function Login() {
 
     try {
       const { type, provider } = options;
-      const redirectURL = window.location.origin + "/api/auth/callback";
+      // Add returnTo to the redirect URL if available
+      let redirectURL = window.location.origin + "/api/auth/callback";
+      if (returnTo) {
+        redirectURL += `?return-to=${encodeURIComponent(returnTo)}`;
+      }
 
       if (type === "oauth") {
         await supabase.auth.signInWithOAuth({
@@ -44,6 +74,7 @@ export default function Login() {
       }
     } catch (error) {
       console.log(error);
+      toast.error("Sign in failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
