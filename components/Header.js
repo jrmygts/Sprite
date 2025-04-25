@@ -8,7 +8,12 @@ import ButtonSignin from "./ButtonSignin";
 import logo from "@/app/icon.png";
 import config from "@/config";
 
-const links = [];
+const links = [
+  {
+    href: "/history",
+    label: "History",
+  },
+];
 
 const cta = <ButtonSignin extraStyle="btn-primary" />;
 

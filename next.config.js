@@ -7,7 +7,8 @@ const nextConfig = {
       "pbs.twimg.com",
       "images.unsplash.com",
       "logos-world.net",
-      "uxjxhhrxzjkqmhcqfvhu.supabase.co"
+      "uxjxhhrxzjkqmhcqfvhu.supabase.co",
+      "placehold.co"
     ],
   },
 };
