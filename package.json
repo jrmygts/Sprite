@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
-    "@supabase/ssr": "^0.4.0",
+    "@supabase/ssr": "^0.4.1",
     "@supabase/supabase-js": "^2.45.0",
     "axios": "^1.6.8",
     "crisp-sdk-web": "^1.0.22",
@@ -22,6 +22,7 @@
     "next-sitemap": "^4.2.3",
     "nextjs-toploader": "^1.6.11",
     "nodemailer": "^6.9.13",
+    "openai": "^4.96.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hot-toast": "^2.4.1",

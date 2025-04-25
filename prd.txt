@@ -1,0 +1,106 @@
+# Product Requirements Document (PRD)
+**Product**: Sprite – AI‑generated 2D Game‑Asset Generator  
+**Version**: 0.2 (2025‑04‑25)  
+**Owner**: Jeremy / Sprite Core  
+**Status**: Draft (MVP scope frozen)
+
+---
+## 1. Problem Statement
+Indie game developers waste hours (and money) creating placeholder art before gameplay is proven. Hiring artists or learning pixel art slows iteration. Existing AI art tools (Midjourney, DALL‑E) are generic, require Discord workflows, and don’t output engine‑ready PNGs.
+
+**Goal**: Generate production‑ready 2D sprites, tiles, and UI elements from plain‑English prompts, delivered in PNG format sized for Unity/Unreal.
+
+---
+## 2. Objectives & Success Metrics
+| Objective | Metric | Target (MVP + 90 days) |
+|-----------|--------|-------------------------|
+| Validate willingness to pay | Paid conversions | 30 paying subscribers |
+| Asset quality satisfaction | Avg rating ≥ 4/5 | 75% of beta users |
+| Usage stickiness | Sessions per month | ≥ 4 per active user |
+| Revenue | MRR | $3 000 |
+
+---
+## 3. Target Audience
+- **Primary**: Solo & small‑team indie devs using Unity or Unreal (1‑5 people).  
+- **Secondary**: Game‑design students & game‑jam participants.
+
+Pain points: tight budgets, inability to draw, need for quick iterations.
+
+---
+## 4. Scope (MVP)
+### 4.1 Core Features
+1. **Text‑to‑Sprite Generation**  
+   • Prompt input + resolution dropdown (256², 512², 1024²).  
+   • Output PNG with transparent BG.  
+   • Four style presets: *pixel‑art*, *flat‑vector*, *UI button*, *tileable floor*.
+
+2. **Download & History**  
+   • Show last 10 generations per user.  
+   • Click to download PNG.
+
+3. **Authentication**  
+   • Magic link & Google OAuth via Supabase.
+
+4. **Payments**  
+   • Stripe Checkout, 2 prices: Monthly $99 / Annual $1 000.  
+   • Webhook updates `profiles.subscription_status`.
+
+5. **Landing + Marketing Pages**  
+   • Hero, Features accordion, Pricing, FAQ, CTA, Footer.  
+   • No blog at MVP.
+
+### 4.2 Out of Scope (Post‑MVP)
+- Unity/Unreal in‑editor plugin.  
+- Sprite‑sheet + animation export.  
+- 3D asset generation.  
+- Team seats & collaboration.
+
+---
+## 5. User Journeys
+1. **New user → sign‑up** via Google → gets 10 free generations.  
+2. Generates sprites, downloads PNG → hits paywall after 10.  
+3. Clicks **Get Monthly** → Stripe checkout → success redirect `/dashboard`.  
+4. Continues generating up to 100 images/mo.
+
+---
+## 6. Functional Requirements
+| # | Requirement | Priority |
+|---|-------------|----------|
+| FR‑1 | Prompt input validates ≤ 200 chars | High |
+| FR‑2 | Generation API returns within 15 s | High |
+| FR‑3 | PNGs stored in Supabase storage (public read) | High |
+| FR‑4 | Limit free users to 10 generations (DB row count) | High |
+| FR‑5 | Payment failure downgrades `subscription_status` cron‑daily | Medium |
+
+---
+## 7. Non‑Functional Requirements
+- **Performance**: First contentful paint < 1.5 s on desktop.  
+- **Security**: No secret keys shipped to client; Supabase anon key only.  
+- **Reliability**: 99% uptime (Vercel SLA).  
+- **Compliance**: Stripe PCI SAQ A (Checkout hosted).  
+- **Accessibility**: WCAG AA color contrast via DaisyUI.
+
+---
+## 8. Open Questions
+- Will we fine‑tune an OpenAI model or just rely on prompts?  
+- Should annual plan have unlimited generations or 1 200?  
+- Export formats beyond PNG (e.g., SVG for vector style)?
+
+---
+## 9. Timeline (T‑0 = Apr 25 2025)
+| Milestone | Date | Owner |
+|-----------|------|-------|
+| MVP backend ready (Supabase tables, Stripe webhook) | T+7 days | Dev |
+| Frontend polish + deploy to Vercel | T+10 days | Dev |
+| Beta launch to 20 Discord testers | T+14 days | Founder |
+| Public launch (Product Hunt) | T+28 days | Founder |
+
+---
+## 10. Stakeholders
+- **Jeremy** – Founder / PM
+- **ChatGPT (o3)** – Advisory / co‑pilot
+- **Beta testers** – Indie dev Discord
+
+---
+*Document generated 2025‑04‑25 via ChatGPT. Keep PRD in repo root and update as scope changes.*
+

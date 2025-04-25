@@ -8,20 +8,7 @@ import ButtonSignin from "./ButtonSignin";
 import logo from "@/app/icon.png";
 import config from "@/config";
 
-const links = [
-  {
-    href: "/#pricing",
-    label: "Pricing",
-  },
-  {
-    href: "/#testimonials",
-    label: "Reviews",
-  },
-  {
-    href: "/#faq",
-    label: "FAQ",
-  },
-];
+const links = [];
 
 const cta = <ButtonSignin extraStyle="btn-primary" />;
 
@@ -47,7 +34,7 @@ const Header = () => {
           <Link
             className="flex items-center gap-2 shrink-0 "
             href="/"
-            title={`${config.appName} hompage`}
+            title={`${config.appName} homepage`}
           >
             <Image
               src={logo}
@@ -100,8 +87,10 @@ const Header = () => {
           ))}
         </div>
 
-        {/* CTA on large screens */}
-        <div className="hidden lg:flex lg:justify-end lg:flex-1">{cta}</div>
+        {/* Sign In/Account Button */}
+        <div className="flex lg:flex-1 justify-end">
+          <ButtonSignin />
+        </div>
       </nav>
 
       {/* Mobile menu, show/hide based on menu state. */}
@@ -113,7 +102,7 @@ const Header = () => {
           <div className="flex items-center justify-between">
             <Link
               className="flex items-center gap-2 shrink-0 "
-              title={`${config.appName} hompage`}
+              title={`${config.appName} homepage`}
               href="/"
             >
               <Image
