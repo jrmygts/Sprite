@@ -1,8 +1,8 @@
 // Style presets from .cursorrules
 const stylePresets = {
-  'owlboy-gba': {
-    name: 'Owlboy GBA',
-    snippet: 'in owlboy-gba style: 240×160 base canvas (GBA), ≤32 colors per sheet, soft internal AA, rim-light on silhouettes, rich SNES-style hue-shift shadows',
+  'octopath-traveler': {
+    name: 'Octopath Traveler',
+    snippet: 'HD-2D Octopath-Traveler style, 32-color pixel-art, warm directional lighting, soft depth-of-field glow, subtle rim-light',
     isDefault: true
   },
   'nes': {
@@ -26,11 +26,11 @@ const stylePresets = {
  * Builds an enhanced prompt for GPT Image 1 generation
  * @param {string} basePrompt - User's original prompt
  * @param {string} mode - 'character' or 'sprite-sheet'
- * @param {string} styleKey - Key from stylePresets (defaults to 'owlboy-gba')
+ * @param {string} styleKey - Key from stylePresets (defaults to 'octopath-traveler')
  * @returns {string} Enhanced prompt for GPT Image 1
  */
-export function buildPrompt(basePrompt, mode, styleKey = 'owlboy-gba') {
-  const style = stylePresets[styleKey] || stylePresets['owlboy-gba'];
+export function buildPrompt(basePrompt, mode, styleKey = 'octopath-traveler') {
+  const style = stylePresets[styleKey] || stylePresets['octopath-traveler'];
   const isSheet = mode === 'sprite-sheet';
 
   // Build prompt following the template from .cursorrules

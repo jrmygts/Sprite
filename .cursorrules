@@ -27,8 +27,8 @@
 1. **Branching** `feature/*` → PR → `main` (never commit directly to `main`).
 2. **Env Vars** All secrets live only in **`.env.local`** (git‑ignored).
 3. **Directory shortcuts**
-   * `src/components/` — shared UI.
-   * `src/libs/` — third‑party wrappers (`stripe.js`, `supabase.js`, …).
+   * `src/components/` — shared UI.
+   * `src/libs/` — third‑party wrappers (`stripe.js`, `supabase.js`, …).
 4. **Imports** Use absolute paths via the `@/` alias.
 
 ---
@@ -36,56 +36,66 @@
 ## 3 Coding‑Style Constraints (JavaScript‑first)
 * Project defaults to **JavaScript**; add `.ts/.tsx` only when strict typing is a clear win (e.g. API wrappers).
 * **File naming** `kebab-case` for files / **PascalCase** for React components.
-* **Server Components** by default — add `"use client"` only when hooks or events are required.
+* **Server Components** by default — add `"use client"` only when hooks or events are required.
 * **Forbidden** class components, jQuery, Moment.js.
 
 ---
 
 ## 4 Stripe Rules
-* Prices hard‑coded in `config.js` → `priceId`, `price`, `priceAnchor`.
+* Prices hard‑coded in `config.js` → `priceId`, `price`, `priceAnchor`.
 * Always `mode="subscription"` for both plans.
 * Webhook **`/api/stripe/webhook`** updates `profiles.subscription_status`.
 
 ---
 
 ## 5 Supabase Rules
-* Public client → `libs/supabase/client.js`.
-* SSR helpers → `libs/supabase/server.js`.
-* `profiles` table columns → `id`, `email`, `customer_id`, `subscription_status`.
+* Public client → `libs/supabase/client.js`.
+* SSR helpers → `libs/supabase/server.js`.
+* `profiles` table columns → `id`, `email`, `customer_id`, `subscription_status`.
 
 ---
 
 ## 6 UI / UX Guidelines
-* **Primary colour** `#6366F1` (Tailwind `indigo-500`).
-* **Hero image** `/public/images/sprite-logo.png` (swap once live demo video is ready).
-* **Buttons** `btn btn-primary` for CTAs; `btn-outline` for secondary.
-* **Breakpoints** only `sm`, `md`, `lg`.
+* **Primary colour** `#6366F1` (Tailwind `indigo-500`).
+* **Hero image** `/public/images/sprite-logo.png` (swap once live demo video is ready).
+* **Buttons** `btn btn-primary` for CTAs; `btn-outline` for secondary.
+* **Breakpoints** only `sm`, `md`, `lg`.
 
 ---
 
 ## 7 Pixel‑Art Style Presets
 ### Default → *octopath‑traveler*
-* HD‑2D “Octopath Traveler” vibe (Square‑Enix)
-* 48 × 48 sprite cell rendered inside 1024 × 1024 4 × 4 sheet
-* ≤ 32‑colour pixel sprite + subtle bloom / rim‑lighting
+* HD‑2D "Octopath Traveler" vibe (Square‑Enix)
+* 48 × 48 sprite cell rendered inside 1024 × 1024 4 × 4 sheet
+* ≤ 32‑colour pixel sprite + subtle bloom / rim‑lighting
 * Warm directional lighting, soft depth‑of‑field suggestion
 * Centred character, transparent background
 
-### Alternate presets (shown in dropdown) presets (shown in dropdown)
+**Prompt builder configuration:**
+```js
+styleSnippet['octopath-traveler'] =
+  'HD-2D Octopath-Traveler style, 32-color pixel-art, warm directional lighting, ' +
+  'soft depth-of-field glow, subtle rim-light';
+
+const promptForModel = `${prompt}, ${styleSnippet[key]}, centered character, ` +
+                       'transparent PNG, pixel-art, 4×4 grid if sprite sheet';
+```
+
+### Alternate presets (shown in dropdown)
 | Key | Palette / Constraints | Prompt tag‑line |
 |-----|----------------------|-----------------|
-| `nes`  | 3 colours + alpha, checkerboard dithering | “retro 8‑bit NES palette” |
-| `snes` | 16 colours / tile, pastel shading | “1994 SNES JRPG look” |
-| `pico` | Fixed 16‑colour PICO‑8 palette, 128×128 | “fantasy console lo‑fi” |
+| `nes`  | 3 colours + alpha, checkerboard dithering | "retro 8‑bit NES palette" |
+| `snes` | 16 colours / tile, pastel shading | "1994 SNES JRPG look" |
+| `pico` | Fixed 16‑colour PICO‑8 palette, 128×128 | "fantasy console lo‑fi" |
 
 **Prompt builder must prepend**
 ```text
 ${prompt}, ${styleSnippet[key]}, centered character, transparent PNG,
 pixel‑art, 4×4 grid if sprite sheet
 ```
-*Sprite‑sheet template* → **1024 × 1024**, 4 × 4 grid of 256‑px cells.
+*Sprite‑sheet template* → **1024 × 1024**, 4 × 4 grid of 256‑px cells.
 
-> Keep GPT Image 1 params unchanged (`quality:"medium"`, `background:"transparent"`, …).
+> Keep GPT Image 1 params unchanged (`quality:"medium"`, `background:"transparent"`, …).
 
 ---
 
@@ -97,17 +107,17 @@ pixel‑art, 4×4 grid if sprite sheet
 
 ---
 
-## 9 Image‑Model Reference (GPT Image 1)
-* **Model** `gpt-image-1` (multimodal)
-* **Pricing (1024×1024)** Low `$0.011` | Medium `$0.042` | High `$0.167`
-* **Endpoints** `v1/images/generations`, `v1/images/edits`, …
-* **Features** In‑painting supported; snapshots lock model version.
-* **Rate limits** Tier 1 → TPM 20 000 / IPM 5 (scales with spend).
+## 9 Image‑Model Reference (GPT Image 1)
+* **Model** `gpt-image-1` (multimodal)
+* **Pricing (1024×1024)** Low `$0.011` | Medium `$0.042` | High `$0.167`
+* **Endpoints** `v1/images/generations`, `v1/images/edits`, …
+* **Features** In‑painting supported; snapshots lock model version.
+* **Rate limits** Tier 1 → TPM 20,000 / IPM 5 (scales with spend).
 
 ---
 
 ### Security Note
-Build with standard hardening (XSS, CSRF, SQL i, etc.) in mind.
+Build with standard hardening (XSS, CSRF, SQL i, etc.) in mind.
 
 ---
 
