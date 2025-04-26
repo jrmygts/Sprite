@@ -1,80 +1,115 @@
-# Cursor Rules for Sprite Project
-
-> **Purpose**
-> Keep Cursor AI focused and consistent when generating code or content for the **Sprite** indie‑SaaS. Treat this as the single source of truth for tech‑stack boundaries and coding style.
+# Cursor Rules for **Sprite** Project
+*Single source of truth for tech‑stack, coding style, pixel‑art presets & prompt hints*
 
 ---
 
-## 1. Tech Stack (Lock‑In)
-
-| Layer                     | Choice                                     | Notes                                                                                                 |
-| ------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| **Frontend Framework**    | **Next.js 14 App Router**                  | Use `/app` directory, React 18, server components where possible.                                     |
-| **Styling**               | **Tailwind CSS 3.4 + DaisyUI 4**           | No other CSS frameworks. Leverage utility classes; keep custom CSS minimal.                           |
-| **State / Data‑Fetching** | React hooks + built‑in Next.js fetch cache | Avoid Redux/Zustand unless justified.                                                                 |
-| **Auth**                  | **Supabase Auth (v2)**                     | Magic link + Google OAuth only. Use `@supabase/auth-helpers-nextjs` + `@supabase/auth-helpers-react`. |
-| **Database**              | Supabase Postgres (hosted)                 | No MongoDB. Keep schema in `supabase/migrations`.                                                     |
-| **Payments**              | **Stripe** (Checkout + Customer Portal)    | Monthly \$99 and Annual \$1,000 prices only.                                                          |
-| **Email**                 | Resend + Nodemailer fallback               | For magic‑link resend + transactional.                                                                |
-| **Hosting**               | Vercel                                     | Continuous deployment from `main`.                                                                    |
-| **CI/Lint**               | ESLint + Prettier (Next preset)            | No custom Airbnb rules.                                                                               |
+## 0 Purpose
+> Keep **Cursor AI** focused and consistent when generating code or content for the **Sprite** indie‑SaaS.
 
 ---
 
-## 2. Repository Conventions
-
-1. **Branching**: feature branches -> PR -> `main`. No commits directly to `main`.
-2. **Env Vars**: All sensitive keys live in `.env.local`, never committed.
-3. **Directory shortcuts**:
-   - `src/components/` for shared UI.
-   - `src/libs/` for third‑party wrappers (e.g. `stripe.js`, `supabase.js`).
-4. **Imports**: Use absolute imports via `@/` alias.
-
----
-
-## 3. Coding Style Constraints
-
-- **TypeScript Opt‑In**: Only add `.ts`/`.tsx` when strict types help (e.g. API wrappers). Otherwise keep JS.
-- **File Naming**: kebab‑case for files, PascalCase for React components.
-- **Server Components**: Default to server; switch to `"use client"` only when hooks/events are required.
-- **No Class Components**, no jQuery, no Moment.js.
+## 1 Tech Stack (locked‑in)
+| Layer | Choice | Notes |
+|-------|--------|-------|
+| **Frontend** | **Next.js 14 (App Router)** | `/app` directory, React 18, prefer Server Components |
+| **Styling** | **Tailwind CSS 3.4 + DaisyUI 4** | No other CSS frameworks; minimise custom CSS |
+| **State / Data‑fetch** | React hooks + **Next.js** fetch cache | Avoid Redux / Zustand unless absolutely required |
+| **Auth** | **Supabase Auth v2** | Magic‑link & Google OAuth via `@supabase/auth-helpers‑*` |
+| **Database** | Supabase Postgres (hosted) | Keep schema migrations in `supabase/migrations/` |
+| **Payments** | **Stripe** (Checkout + Customer Portal) | Only two plans → **$99 /mo** & **$1 000 /yr** |
+| **Email** | **Resend** (+ Nodemailer fallback) | Magic‑link + transactional mail |
+| **Hosting** | **Vercel** | Continuous deployment from `main` |
+| **CI / Lint** | **ESLint + Prettier** (Next preset) | No custom Airbnb rules |
 
 ---
 
-## 4. Stripe Rules
-
-- Prices hard‑coded in `config.js` (`priceId`, `price`, `priceAnchor`).
-- Use **mode="subscription"** for both plans.
-- Webhook route `/api/stripe/webhook` updates `profiles.subscription_status`.
-
----
-
-## 5. Supabase Rules
-
-- Public Supabase client in `libs/supabase/client.js`.
-- SSR helpers in `libs/supabase/server.js`.
-- `profiles` table owns: `id`, `email`, `customer_id`, `subscription_status`.
+## 2 Repository Conventions
+1. **Branching** `feature/*` → PR → `main` (never commit directly to `main`).
+2. **Env Vars** All secrets live only in **`.env.local`** (git‑ignored).
+3. **Directory shortcuts**
+   * `src/components/` — shared UI.
+   * `src/libs/` — third‑party wrappers (`stripe.js`, `supabase.js`, …).
+4. **Imports** Use absolute paths via the `@/` alias.
 
 ---
 
-## 6. UI/UX Guidelines
-
-- Hero image: `/public/images/sprite-logo.png` (replace when live demo video ready).
-- Primary color = `#6366F1` (Tailwind `indigo-500`).
-- Buttons: `btn btn-primary` for CTAs, `btn-outline` for secondary.
-- Responsive at `sm`, `md`, `lg` breakpoints only.
-
----
-
-## 7. Prohibited
-
-- Do **not** introduce NextAuth, MongoDB, Firebase, or Redux.
-- No CSS‑in‑JS libs (Styled‑Components, Emotion).
-- No SCSS/Sass.
-- No class‑based React components.
+## 3 Coding‑Style Constraints (JavaScript‑first)
+* Project defaults to **JavaScript**; add `.ts/.tsx` only when strict typing is a clear win (e.g. API wrappers).
+* **File naming** `kebab-case` for files / **PascalCase** for React components.
+* **Server Components** by default — add `"use client"` only when hooks or events are required.
+* **Forbidden** class components, jQuery, Moment.js.
 
 ---
 
-Keep this file up to date whenever the stack decision changes.
+## 4 Stripe Rules
+* Prices hard‑coded in `config.js` → `priceId`, `price`, `priceAnchor`.
+* Always `mode="subscription"` for both plans.
+* Webhook **`/api/stripe/webhook`** updates `profiles.subscription_status`.
 
-Also please keep security in mind and build with the intention of protecting my site from common hacks.
+---
+
+## 5 Supabase Rules
+* Public client → `libs/supabase/client.js`.
+* SSR helpers → `libs/supabase/server.js`.
+* `profiles` table columns → `id`, `email`, `customer_id`, `subscription_status`.
+
+---
+
+## 6 UI / UX Guidelines
+* **Primary colour** `#6366F1` (Tailwind `indigo-500`).
+* **Hero image** `/public/images/sprite-logo.png` (swap once live demo video is ready).
+* **Buttons** `btn btn-primary` for CTAs; `btn-outline` for secondary.
+* **Breakpoints** only `sm`, `md`, `lg`.
+
+---
+
+## 7 Pixel‑Art Style Presets
+### Default → *octopath‑traveler*
+* HD‑2D “Octopath Traveler” vibe (Square‑Enix)
+* 48 × 48 sprite cell rendered inside 1024 × 1024 4 × 4 sheet
+* ≤ 32‑colour pixel sprite + subtle bloom / rim‑lighting
+* Warm directional lighting, soft depth‑of‑field suggestion
+* Centred character, transparent background
+
+### Alternate presets (shown in dropdown) presets (shown in dropdown)
+| Key | Palette / Constraints | Prompt tag‑line |
+|-----|----------------------|-----------------|
+| `nes`  | 3 colours + alpha, checkerboard dithering | “retro 8‑bit NES palette” |
+| `snes` | 16 colours / tile, pastel shading | “1994 SNES JRPG look” |
+| `pico` | Fixed 16‑colour PICO‑8 palette, 128×128 | “fantasy console lo‑fi” |
+
+**Prompt builder must prepend**
+```text
+${prompt}, ${styleSnippet[key]}, centered character, transparent PNG,
+pixel‑art, 4×4 grid if sprite sheet
+```
+*Sprite‑sheet template* → **1024 × 1024**, 4 × 4 grid of 256‑px cells.
+
+> Keep GPT Image 1 params unchanged (`quality:"medium"`, `background:"transparent"`, …).
+
+---
+
+## 8 Prohibited (hard bans)
+* NextAuth, MongoDB, Firebase, Redux
+* CSS‑in‑JS (Styled‑Components, Emotion)
+* SCSS / Sass
+* React class components
+
+---
+
+## 9 Image‑Model Reference (GPT Image 1)
+* **Model** `gpt-image-1` (multimodal)
+* **Pricing (1024×1024)** Low `$0.011` | Medium `$0.042` | High `$0.167`
+* **Endpoints** `v1/images/generations`, `v1/images/edits`, …
+* **Features** In‑painting supported; snapshots lock model version.
+* **Rate limits** Tier 1 → TPM 20 000 / IPM 5 (scales with spend).
+
+---
+
+### Security Note
+Build with standard hardening (XSS, CSRF, SQL i, etc.) in mind.
+
+---
+
+> **Update this file** whenever the stack or design decisions change.
+

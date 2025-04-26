@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import openai from "@/libs/openai";
+import { buildPrompt } from "@/libs/prompts";
 
 export async function POST(request) {
   try {
@@ -31,24 +32,15 @@ export async function POST(request) {
     }
 
     // Get request body
-    const { prompt, resolution, stylePreset } = await request.json();
+    const { prompt, resolution, mode } = await request.json();
 
     // Validate inputs
-    if (!prompt || !resolution || !stylePreset) {
+    if (!prompt || !resolution || !mode) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
-
-    // Map the requested resolution to supported sizes for GPT Image 1
-    const supportedSizes = {
-      "256": "1024x1024",  // We'll downscale from 1024 to 256 after generation
-      "512": "1024x1024"   // We'll downscale from 1024 to 512 after generation
-    };
-
-    // Default to 1024x1024 if resolution not supported
-    const imageSize = supportedSizes[resolution] || "1024x1024";
 
     if (prompt.length > 200) {
       return NextResponse.json(
@@ -57,33 +49,26 @@ export async function POST(request) {
       );
     }
 
-    // Enhance the prompt based on style preset
-    const stylePrompts = {
-      "pixel-art": "Create a pixel art style sprite with clear pixels and limited color palette.",
-      "flat-vector": "Create a flat vector style sprite with clean lines and solid colors.",
-      "ui-button": "Create a modern UI button design with clear edges and good contrast.",
-      "tileable-floor": "Create a seamless tileable floor texture that can repeat perfectly.",
-    };
+    // Always generate at 1024x1024 for best quality
+    const imageSize = "1024x1024";
 
-    const enhancedPrompt = `${stylePrompts[stylePreset]} ${prompt}. Make it game-ready, with a transparent background, and ensure it's a single cohesive sprite suitable for a video game.`;
-
+    // Build enhanced prompt using the prompt helper
+    const enhancedPrompt = buildPrompt(prompt, mode);
     console.log('Generating image with prompt:', enhancedPrompt);
 
     // Generate image using GPT Image 1
+    // TODO: Future enhancement - Add quality tier based on user subscription
     const response = await openai.images.generate({
       model: "gpt-image-1",
       prompt: enhancedPrompt,
       n: 1,
       size: imageSize,
-      quality: "medium",  // Options: low, medium, high, auto (default)
-      background: "transparent",  // Enable transparency for sprites
-      output_format: "png",  // Required for transparency
-      moderation: "auto"  // Standard content filtering
+      quality: "medium", // Balance between quality and cost ($0.042 per 1024x1024)
+      background: "transparent", // Enable transparency for sprites
+      output_format: "png", // Required for transparency
+      moderation: "auto" // Standard content filtering
     });
 
-    console.log('OpenAI response:', JSON.stringify(response, null, 2));
-
-    // For GPT Image 1, we get base64 data
     if (!response?.data?.[0]?.b64_json) {
       console.error('Full OpenAI response:', JSON.stringify(response, null, 2));
       throw new Error('No image data in OpenAI response');
@@ -93,19 +78,30 @@ export async function POST(request) {
     const imageBase64 = response.data[0].b64_json;
     const imageBuffer = Buffer.from(imageBase64, 'base64');
 
-    // Resize the image to the requested dimensions
-    const targetSize = parseInt(resolution);
-    const resizedImageBuffer = await sharp(imageBuffer)
-      .resize(targetSize, targetSize, {
-        fit: 'contain',
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      })
-      .png()
-      .toBuffer();
+    // Process the image based on mode
+    let processedBuffer;
+    if (mode === "character") {
+      // For single character, just resize
+      processedBuffer = await sharp(imageBuffer)
+        .resize(parseInt(resolution), parseInt(resolution), {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .png()
+        .toBuffer();
+    } else {
+      // For sprite sheet, maintain 4x4 grid proportions
+      processedBuffer = await sharp(imageBuffer)
+        .resize(parseInt(resolution) * 4, parseInt(resolution) * 4, {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .png()
+        .toBuffer();
+    }
     
-    const imageBlob = new Blob([resizedImageBuffer], { type: 'image/png' });
-    
-    const fileName = `${session.user.id}/${Date.now()}-${resolution}.png`;
+    const imageBlob = new Blob([processedBuffer], { type: 'image/png' });
+    const fileName = `${session.user.id}/${Date.now()}-${resolution}-${mode}.png`;
     
     console.log('Uploading to Supabase:', fileName);
     const { data: uploadData, error: uploadError } = await supabase
@@ -121,13 +117,11 @@ export async function POST(request) {
       throw uploadError;
     }
 
-    // Get the public URL for the uploaded image
+    // Get the public URL
     const { data: { publicUrl } } = supabase
       .storage
       .from("sprites")
       .getPublicUrl(fileName);
-
-    console.log('Public URL:', publicUrl);
 
     // Store generation in database
     const { data, error } = await supabase
@@ -137,7 +131,8 @@ export async function POST(request) {
           user_id: session.user.id,
           prompt,
           resolution,
-          style_preset: stylePreset,
+          style_preset: "owlboy-gba", // Default style from .cursorrules
+          mode,
           image_url: publicUrl,
         },
       ])
@@ -154,11 +149,10 @@ export async function POST(request) {
       imageUrl: publicUrl,
       prompt,
       resolution,
-      stylePreset,
+      mode,
     });
   } catch (error) {
     console.error("Error generating sprite:", error);
-    // Return more specific error message
     return NextResponse.json(
       { error: error.message || "Failed to generate sprite" },
       { status: 500 }

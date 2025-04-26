@@ -10,17 +10,15 @@ const resolutions = [
   { value: "512", label: "512 × 512" },
 ];
 
-const stylePresets = [
-  { value: "pixel-art", label: "Pixel Art" },
-  { value: "flat-vector", label: "Flat Vector" },
-  { value: "ui-button", label: "UI Button" },
-  { value: "tileable-floor", label: "Tileable Floor" },
+const generationModes = [
+  { value: "character", label: "Single Character" },
+  { value: "sprite-sheet", label: "Sprite Sheet (4×4 Grid)" },
 ];
 
 export default function GeneratePage() {
   const [prompt, setPrompt] = useState("");
   const [resolution, setResolution] = useState("256");
-  const [stylePreset, setStylePreset] = useState("pixel-art");
+  const [mode, setMode] = useState("character");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
@@ -48,19 +46,18 @@ export default function GeneratePage() {
 
         if (!data.user) {
           console.log("No user found, redirecting to signin");
-          // Redirect to signin with returnTo parameter
           router.push('/signin?returnTo=/generate');
           return;
         }
 
         console.log("User authenticated:", data.user.id);
         
-        // Get user profile - handle case where profile might not exist
+        // Get user profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('has_access, subscription_status')
           .eq('id', data.user.id)
-          .maybeSingle(); // Use maybeSingle() instead of single() to handle no results gracefully
+          .maybeSingle();
         
         if (profileError) {
           console.error("Error getting profile:", profileError);
@@ -68,7 +65,6 @@ export default function GeneratePage() {
           return;
         }
 
-        // If no profile exists, treat as free tier
         const hasSubscription = profile?.has_access === true;
         
         // Count generations
@@ -83,16 +79,11 @@ export default function GeneratePage() {
           return;
         }
         
-        console.log("User has generated:", count, "sprites");
-        console.log("Profile status:", profile?.subscription_status);
-        console.log("Has access:", profile?.has_access);
-        
         // Free tier allows 10 generations
         const freeGenerationsLeft = 10 - (count || 0);
         
         setGenerationsLeft(hasSubscription ? "Unlimited" : Math.max(0, freeGenerationsLeft));
         
-        // Redirect if no subscription and used all free generations
         if (!hasSubscription && freeGenerationsLeft <= 0) {
           console.log("No generations left, redirecting to pricing");
           router.push('/pricing?from=generate');
@@ -115,7 +106,7 @@ export default function GeneratePage() {
     setError(null);
     
     try {
-      console.log("Generating sprite with:", { prompt, resolution, stylePreset });
+      console.log("Generating sprite with:", { prompt, resolution, mode });
       
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -125,7 +116,8 @@ export default function GeneratePage() {
         body: JSON.stringify({
           prompt,
           resolution,
-          stylePreset,
+          mode,
+          stylePreset: "pixel-art", // Always use pixel art style
         }),
       });
 
@@ -147,11 +139,10 @@ export default function GeneratePage() {
       console.log("Generation successful:", data);
       setGeneratedImage(data);
       
-      // Update generations left count after successful generation
+      // Update generations left count
       if (generationsLeft !== "Unlimited") {
         setGenerationsLeft(prev => typeof prev === 'number' ? Math.max(0, prev - 1) : prev);
         if (generationsLeft <= 1) {
-          // Last generation, show a message
           setError("This was your last free generation. Please subscribe for unlimited access.");
         }
       }
@@ -199,142 +190,123 @@ export default function GeneratePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg"></span>
-          <p className="mt-4">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-base-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-base-100 shadow-xl rounded-2xl p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-extrabold text-base-content">
-              Generate Sprite
-            </h1>
-            {generationsLeft !== "Unlimited" && (
-              <div className="badge badge-primary">
-                {generationsLeft} generations left
-              </div>
-            )}
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Generate Sprite</h1>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label htmlFor="prompt" className="block text-sm font-medium mb-2">
+            Describe your sprite
+          </label>
+          <textarea
+            id="prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="w-full p-2 border rounded"
+            rows={3}
+            placeholder="A cute pixel art cat with orange fur and green eyes..."
+            maxLength={200}
+            required
+          />
+          <div className="text-xs text-gray-500 mt-1">
+            {prompt.length}/200 characters
           </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="alert alert-error mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Prompt Input */}
-            <div>
-              <label htmlFor="prompt" className="block text-sm font-medium mb-2">
-                Describe your sprite
-              </label>
-              <textarea
-                id="prompt"
-                name="prompt"
-                rows={3}
-                maxLength={200}
-                className="textarea textarea-bordered w-full"
-                placeholder="A cute pixel art cat with orange fur and green eyes..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                required
-              />
-              <p className="text-xs text-base-content/60 mt-1">
-                {prompt.length}/200 characters
-              </p>
-            </div>
-
-            {/* Resolution Selection */}
-            <div>
-              <label htmlFor="resolution" className="block text-sm font-medium mb-2">
-                Resolution
-              </label>
-              <select
-                id="resolution"
-                name="resolution"
-                className="select select-bordered w-full"
-                value={resolution}
-                onChange={(e) => setResolution(e.target.value)}
-              >
-                {resolutions.map((res) => (
-                  <option key={res.value} value={res.value}>
-                    {res.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Style Preset Selection */}
-            <div>
-              <label htmlFor="stylePreset" className="block text-sm font-medium mb-2">
-                Style
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                {stylePresets.map((style) => (
-                  <button
-                    key={style.value}
-                    type="button"
-                    className={`btn btn-outline ${
-                      stylePreset === style.value ? "btn-primary" : ""
-                    }`}
-                    onClick={() => setStylePreset(style.value)}
-                  >
-                    {style.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Generated Image Display */}
-            {generatedImage && (
-              <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-4">Generated Sprite</h2>
-                <div className="relative aspect-square w-full max-w-sm mx-auto border-2 border-base-300 rounded-lg overflow-hidden">
-                  <Image
-                    src={generatedImage.imageUrl}
-                    alt={generatedImage.prompt || "Generated sprite"}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                <div className="flex justify-center mt-4">
-                  <a
-                    href={generatedImage.imageUrl}
-                    download
-                    className="btn btn-secondary"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Download PNG
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {/* Generate Button */}
-            <button
-              type="submit"
-              className={`btn btn-primary w-full ${
-                isGenerating ? "loading" : ""
-              }`}
-              disabled={isGenerating || !prompt.trim() || generationsLeft === 0}
-            >
-              {isGenerating ? "Generating..." : "Generate Sprite"}
-            </button>
-          </form>
         </div>
-      </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Resolution
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            {resolutions.map((res) => (
+              <button
+                key={res.value}
+                type="button"
+                onClick={() => setResolution(res.value)}
+                className={`p-3 border rounded-lg text-center ${
+                  resolution === res.value
+                    ? "border-primary bg-primary/10"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                {res.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Generation Mode
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            {generationModes.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setMode(m.value)}
+                className={`p-3 border rounded-lg text-center ${
+                  mode === m.value
+                    ? "border-primary bg-primary/10"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isGenerating || !prompt}
+          className="btn btn-primary w-full"
+        >
+          {isGenerating ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Generating...
+            </div>
+          ) : (
+            `Generate Sprite ${generationsLeft ? `(${generationsLeft} left)` : ""}`
+          )}
+        </button>
+      </form>
+
+      {generatedImage && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Generated Sprite</h2>
+          <div className="relative aspect-square w-full border rounded-lg overflow-hidden">
+            <Image
+              src={generatedImage.imageUrl}
+              alt="Generated sprite"
+              fill
+              className="object-contain"
+              unoptimized
+            />
+          </div>
+          <a
+            href={generatedImage.imageUrl}
+            download="sprite.png"
+            className="btn btn-outline w-full mt-4"
+          >
+            Download
+          </a>
+        </div>
+      )}
     </div>
   );
 } 
