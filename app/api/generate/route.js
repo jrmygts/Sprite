@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import openai from "@/libs/openai";
 
 export async function POST(request) {
@@ -42,12 +43,11 @@ export async function POST(request) {
 
     // Map the requested resolution to supported sizes for GPT Image 1
     const supportedSizes = {
-      "512": "1024x1024",   // Map smaller sizes to square format
-      "1024": "1024x1024",  // Square format (fastest)
-      "1536": "1536x1024"   // Landscape format
+      "256": "1024x1024",  // We'll downscale from 1024 to 256 after generation
+      "512": "1024x1024"   // We'll downscale from 1024 to 512 after generation
     };
 
-    // Default to square format for best performance
+    // Default to 1024x1024 if resolution not supported
     const imageSize = supportedSizes[resolution] || "1024x1024";
 
     if (prompt.length > 200) {
@@ -89,10 +89,21 @@ export async function POST(request) {
       throw new Error('No image data in OpenAI response');
     }
 
-    // Convert base64 to blob
+    // Convert base64 to buffer
     const imageBase64 = response.data[0].b64_json;
     const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+
+    // Resize the image to the requested dimensions
+    const targetSize = parseInt(resolution);
+    const resizedImageBuffer = await sharp(imageBuffer)
+      .resize(targetSize, targetSize, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      })
+      .png()
+      .toBuffer();
+    
+    const imageBlob = new Blob([resizedImageBuffer], { type: 'image/png' });
     
     const fileName = `${session.user.id}/${Date.now()}-${resolution}.png`;
     

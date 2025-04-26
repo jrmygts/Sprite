@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 const resolutions = [
   { value: "256", label: "256 × 256" },
   { value: "512", label: "512 × 512" },
-  { value: "1024", label: "1024 × 1024" },
 ];
 
 const stylePresets = [
@@ -20,7 +19,7 @@ const stylePresets = [
 
 export default function GeneratePage() {
   const [prompt, setPrompt] = useState("");
-  const [resolution, setResolution] = useState("512");
+  const [resolution, setResolution] = useState("256");
   const [stylePreset, setStylePreset] = useState("pixel-art");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);

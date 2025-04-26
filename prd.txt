@@ -1,106 +1,184 @@
-# Product Requirements Document (PRD)
-**Product**: Sprite – AI‑generated 2D Game‑Asset Generator  
-**Version**: 0.2 (2025‑04‑25)  
-**Owner**: Jeremy / Sprite Core  
-**Status**: Draft (MVP scope frozen)
+Product Requirements Document (PRD)
 
----
-## 1. Problem Statement
-Indie game developers waste hours (and money) creating placeholder art before gameplay is proven. Hiring artists or learning pixel art slows iteration. Existing AI art tools (Midjourney, DALL‑E) are generic, require Discord workflows, and don’t output engine‑ready PNGs.
+Product: Sprite – AI‑Generated 2D Game‑Asset GeneratorVersion: 0.3 (2025‑04‑26)Owner: Jeremy / Sprite CoreStatus: Draft (MVP scope frozen)
 
-**Goal**: Generate production‑ready 2D sprites, tiles, and UI elements from plain‑English prompts, delivered in PNG format sized for Unity/Unreal.
+1  Problem Statement
 
----
-## 2. Objectives & Success Metrics
-| Objective | Metric | Target (MVP + 90 days) |
-|-----------|--------|-------------------------|
-| Validate willingness to pay | Paid conversions | 30 paying subscribers |
-| Asset quality satisfaction | Avg rating ≥ 4/5 | 75% of beta users |
-| Usage stickiness | Sessions per month | ≥ 4 per active user |
-| Revenue | MRR | $3 000 |
+Indie devs burn precious hours (or cash) on temporary art before gameplay feels fun. Current AI tools (Midjourney, DALL‑E) are generic, live in Discord, and don’t export engine‑ready sprite sheets. We need a prompt‑to‑PNG pipeline that slots straight into Unity in seconds.
 
----
-## 3. Target Audience
-- **Primary**: Solo & small‑team indie devs using Unity or Unreal (1‑5 people).  
-- **Secondary**: Game‑design students & game‑jam participants.
+2  Objectives & Success Metrics
 
-Pain points: tight budgets, inability to draw, need for quick iterations.
+Objective
 
----
-## 4. Scope (MVP)
-### 4.1 Core Features
-1. **Text‑to‑Sprite Generation**  
-   • Prompt input + resolution dropdown (256², 512², 1024²).  
-   • Output PNG with transparent BG.  
-   • Four style presets: *pixel‑art*, *flat‑vector*, *UI button*, *tileable floor*.
+Metric
 
-2. **Download & History**  
-   • Show last 10 generations per user.  
-   • Click to download PNG.
+Target (MVP + 90 days)
 
-3. **Authentication**  
-   • Magic link & Google OAuth via Supabase.
+Prove people will pay
 
-4. **Payments**  
-   • Stripe Checkout, 2 prices: Monthly $99 / Annual $1 000.  
-   • Webhook updates `profiles.subscription_status`.
+Paid conversions
 
-5. **Landing + Marketing Pages**  
-   • Hero, Features accordion, Pricing, FAQ, CTA, Footer.  
-   • No blog at MVP.
+≥ 30 paying users
 
-### 4.2 Out of Scope (Post‑MVP)
-- Unity/Unreal in‑editor plugin.  
-- Sprite‑sheet + animation export.  
-- 3D asset generation.  
-- Team seats & collaboration.
+Delight users
 
----
-## 5. User Journeys
-1. **New user → sign‑up** via Google → gets 10 free generations.  
-2. Generates sprites, downloads PNG → hits paywall after 10.  
-3. Clicks **Get Monthly** → Stripe checkout → success redirect `/dashboard`.  
-4. Continues generating up to 100 images/mo.
+Avg quality rating
 
----
-## 6. Functional Requirements
-| # | Requirement | Priority |
-|---|-------------|----------|
-| FR‑1 | Prompt input validates ≤ 200 chars | High |
-| FR‑2 | Generation API returns within 15 s | High |
-| FR‑3 | PNGs stored in Supabase storage (public read) | High |
-| FR‑4 | Limit free users to 10 generations (DB row count) | High |
-| FR‑5 | Payment failure downgrades `subscription_status` cron‑daily | Medium |
+≥ 4 / 5
 
----
-## 7. Non‑Functional Requirements
-- **Performance**: First contentful paint < 1.5 s on desktop.  
-- **Security**: No secret keys shipped to client; Supabase anon key only.  
-- **Reliability**: 99% uptime (Vercel SLA).  
-- **Compliance**: Stripe PCI SAQ A (Checkout hosted).  
-- **Accessibility**: WCAG AA color contrast via DaisyUI.
+Retain users
 
----
-## 8. Open Questions
-- Will we fine‑tune an OpenAI model or just rely on prompts?  
-- Should annual plan have unlimited generations or 1 200?  
-- Export formats beyond PNG (e.g., SVG for vector style)?
+Sessions / mo
 
----
-## 9. Timeline (T‑0 = Apr 25 2025)
-| Milestone | Date | Owner |
-|-----------|------|-------|
-| MVP backend ready (Supabase tables, Stripe webhook) | T+7 days | Dev |
-| Frontend polish + deploy to Vercel | T+10 days | Dev |
-| Beta launch to 20 Discord testers | T+14 days | Founder |
-| Public launch (Product Hunt) | T+28 days | Founder |
+≥ 4 per active user
 
----
-## 10. Stakeholders
-- **Jeremy** – Founder / PM
-- **ChatGPT (o3)** – Advisory / co‑pilot
-- **Beta testers** – Indie dev Discord
+Revenue
 
----
-*Document generated 2025‑04‑25 via ChatGPT. Keep PRD in repo root and update as scope changes.*
+MRR
 
+≥ $3 000
+
+3  Target Audience
+
+Primary: Solo & small‑team indie devs (1‑5 ppl) using Unity.Secondary: Game‑jam teams, students.
+
+Pain points: no art budget, tight deadlines, low art skills, need rapid iteration.
+
+4  Scope (MVP)
+
+4.1  Core Features
+
+Prompt → Sprite Generation• Input field ≤ 200 chars.• Resolutions: 256×256 (default) and 512×512.• Style locked to Pixel‑Art (other styles post‑MVP).• Consistent‑character toggle (reuse seed) (Nice‑to‑have).• Output PNG with transparent background stored in Supabase Storage.
+
+Download & History• Card grid shows last 10 generations.• Hover animation preview (4‑frame loop) (Nice‑to‑have).• "Re‑Generate" action re‑opens prompt with same seed.
+
+Unity Helper Export• One‑click download of a .unitypackage containing:– Sprite sheet (4‑frame walk cycle created client‑side)– Prefab with Animator wired at 12 fps.
+
+Auth• Supabase Magic Link + Google OAuth.
+
+Payments & Quotas• Free Tier: 10 credits on sign‑up.• Pay‑As‑You‑Go: $0.08 / credit (1 credit = 1 generation).• Unlimited Plan: $99 / mo (soft limit 2 000 gens to protect GPU).• Stripe Checkout & webhook updates profiles.subscription_status & credits.
+
+Landing / Marketing Pages• Hero, Live sprite gallery, Pricing, FAQ, CTA.• No blog for MVP.
+
+4.2  Out of Scope (Post‑MVP)
+
+Additional styles (flat‑vector, UI buttons, tileable floors).
+
+Unreal / Godot plugins.
+
+Palette‑lock UI, team seats, 3D assets.
+
+5  User Journeys
+
+New Visitor → Sign‑Up (Google or Magic Link) → gets 10 credits.
+
+Generates sprites, downloads PNGs → credit counter hits 0 → paywall modal.
+
+Chooses Pay‑Go or Unlimited → Stripe checkout → redirect /history.
+
+Keeps generating until credits or soft‑limit reached.
+
+6  Functional Requirements
+
+#
+
+Requirement
+
+Priority
+
+FR‑1
+
+Prompt input max 200 chars
+
+High
+
+FR‑2
+
+Generation response ≤ 15 s
+
+High
+
+FR‑3
+
+PNG saved to Supabase sprites/{userId}/{id}.png
+
+High
+
+FR‑4
+
+Free tier limited to 10 total generations
+
+High
+
+FR‑5
+
+Cron job downgrades subscription_status on failed payment & converts leftover Unlimited users to Pay‑Go
+
+Medium
+
+FR‑6
+
+Unity package generated client‑side with JSZip
+
+Medium
+
+FR‑7
+
+Hover preview loops 4‑frame sprite @12 fps
+
+Low
+
+7  Non‑Functional Requirements
+
+Perf: FCP < 1.5 s on desktop (Vercel Edge).
+
+Reliability: 99 % uptime.
+
+Security: No secret keys exposed; env vars on serverless only.
+
+Compliance: Stripe PCI SAQ A.
+
+Accessibility: WCAG AA via DaisyUI.
+
+Gracefully Throttling Unlimited-Plan Abuse
+Fair-Use Soft Cap
+Document a 2 000-gen/month fair-use limit in ToS.
+
+Monitor counts nightly; if user exceeds, send polite “Hey, you’re at 110 % of fair use—contact us for a studio plan.”
+
+Burst & Concurrency Limits
+At generation API:
+
+text
+Copy
+Edit
+X-Max-Concurrent-Jobs: 3
+429 Too Many Requests if >3 in flight
+Prevents hammer scripts.
+
+Progressive Back-off Pricing
+After 2 000 gens, switch to $0.02 / extra-gen automatically. Show banner in dashboard.
+
+Abuse Flags
+Track avg_prompt_length < 5, same_prompt_repeat > 50, etc. Flag for manual review.
+
+These measures let honest power users keep rolling while making it uneconomical to farm your GPUs.
+
+3. Walk-Cycle Generation — Client JS vs. Server
+
+Aspect	Client-Side JS (current)	Server-Side Pre-gen
+Compute Cost	Zero on you	+1 extra model inference or imagemagick pass
+Latency	Instant because frames already in browser	Adds ~2-3 s to download
+Bandwidth	User downloads single sprite sheet (small)	Same
+Control	User can fiddle FPS in Unity anyway	Can auto-bake optimized sheet (power of GPU, dither, etc.)
+Complexity	JSZip + canvas slicing (~100 LOC)	Worker queue + storage write + more failure states
+Recommendation: Stay client-side for MVP. Your users are devs who’ll happily accept a lightweight JS-built sheet if it saves them waiting. Revisit server-side later if you add multiple animation types (run, jump, attack) that need heavier post-processing.
+
+Bottom Line
+*Ship the consistent-seed toggle now—small lift, big delight.
+
+*Protect the Unlimited tier with a fair-use cap + concurrency limit + metered overage.
+
+*Keep walk-cycle assembly in the browser until feature depth justifies server work.
+
+That keeps your α-version lean, loveable, and defensible without over-engineering. 💪
