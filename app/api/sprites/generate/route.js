@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import crypto from 'crypto';
-import { getMotionConfig, getMotionPrompt } from '@/config/motions';
+import { getMotionConfig, getMotionPrompt, getMotionFrames, getMotionFPS } from '@/config/motions';
 import { spriteQueue } from '@/libs/queue';
 
 // Initialize Supabase client
@@ -36,66 +36,85 @@ async function processMotion(prompt, style, motion, seed) {
     };
   }
 
-  // Generate image with OpenAI
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      prompt: `${prompt}, ${getMotionPrompt(motion)}, 4×4 grid of 256-pixel transparent tiles, centered character, pixel-art, no painterly texture, crisp pixels`,
-      n: 1,
-      size: '1024x1024',
-      quality: 'medium',
-      response_format: 'png',
-      seed: seed
-    })
-  });
+  // Handle directional animations
+  const directions = config.directions === 1 ? [null] : ['south', 'north', 'east', 'west'];
+  const results = [];
 
-  if (!response.ok) throw new Error('OpenAI API error');
-
-  const { data: [imageData] } = await response.json();
-  const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
-
-  // Process image with Sharp
-  const frames = [];
-  for (let i = 0; i < config.frames; i++) {
-    const frame = await sharp(imageBuffer)
-      .extract({
-        left: (i % 4) * 256,
-        top: Math.floor(i / 4) * 256,
-        width: 256,
-        height: 256
+  for (const direction of directions) {
+    // Generate image with OpenAI
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: `${prompt}, ${getMotionPrompt(motion, direction)}, 4×4 grid of 256-pixel transparent tiles, centered character, pixel-art, no painterly texture, crisp pixels`,
+        n: 1,
+        size: '1024x1024',
+        quality: 'medium',
+        response_format: 'png',
+        seed: seed
       })
-      .toBuffer();
-    frames.push(frame);
+    });
+
+    if (!response.ok) throw new Error('OpenAI API error');
+
+    const { data: [imageData] } = await response.json();
+    const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
+
+    // Process image with Sharp
+    const frames = [];
+    for (let i = 0; i < config.frames; i++) {
+      const frame = await sharp(imageBuffer)
+        .extract({
+          left: (i % 4) * 256,
+          top: Math.floor(i / 4) * 256,
+          width: 256,
+          height: 256
+        })
+        .toBuffer();
+      frames.push(frame);
+    }
+
+    // Upload processed frames
+    const uploadPromises = frames.map(async (frame, i) => {
+      const sizes = [1024, 512, 256];
+      return Promise.all(sizes.map(async (size) => {
+        const resized = await sharp(frame)
+          .resize(size, size)
+          .toBuffer();
+        
+        const path = direction 
+          ? `${cacheKey}/${motion}_${direction}_${size}.png`
+          : `${cacheKey}/${motion}_${size}.png`;
+
+        await supabase.storage
+          .from('sprites')
+          .upload(path, resized, {
+            contentType: 'image/png'
+          });
+      }));
+    });
+
+    await Promise.all(uploadPromises);
+
+    results.push({
+      motion,
+      direction,
+      url1024: direction 
+        ? `/sprites/${cacheKey}/${motion}_${direction}_1024.png`
+        : `/sprites/${cacheKey}/${motion}_1024.png`,
+      url512: direction 
+        ? `/sprites/${cacheKey}/${motion}_${direction}_512.png`
+        : `/sprites/${cacheKey}/${motion}_${direction}_512.png`,
+      url256: direction 
+        ? `/sprites/${cacheKey}/${motion}_${direction}_256.png`
+        : `/sprites/${cacheKey}/${motion}_${direction}_256.png`
+    });
   }
 
-  // Upload processed frames
-  const uploadPromises = frames.map(async (frame, i) => {
-    const sizes = [1024, 512, 256];
-    return Promise.all(sizes.map(async (size) => {
-      const resized = await sharp(frame)
-        .resize(size, size)
-        .toBuffer();
-      
-      await supabase.storage
-        .from('sprites')
-        .upload(`${cacheKey}/${motion}_${size}.png`, resized, {
-          contentType: 'image/png'
-        });
-    }));
-  });
-
-  await Promise.all(uploadPromises);
-
-  return {
-    motion,
-    url1024: `/sprites/${cacheKey}/${motion}_1024.png`,
-    url512: `/sprites/${cacheKey}/${motion}_512.png`,
-    url256: `/sprites/${cacheKey}/${motion}_256.png`
-  };
+  return results;
 }
 
 export async function POST(req) {
@@ -141,9 +160,12 @@ export async function POST(req) {
       motions.map(motion => processMotion(prompt, style, motion, seed))
     );
 
+    // Flatten results array
+    const flatResults = results.flat();
+
     // Build atlas
     const atlasFrames = await Promise.all(
-      results.map(async ({ url1024 }) => {
+      flatResults.map(async ({ url1024 }) => {
         const { data } = await supabase.storage
           .from('sprites')
           .download(url1024.replace('/sprites/', ''));
@@ -151,19 +173,27 @@ export async function POST(req) {
       })
     );
 
+    // Prepare composite operations
+    const compositeOps = await Promise.all(
+      atlasFrames.map(async (frame, i) => ({
+        input: await frame.toBuffer(),
+        top: i * 1024,
+        left: 0
+      }))
+    );
+
+    // Calculate actual height based on number of layers
+    const atlasHeight = compositeOps.length * 1024;
+
     const atlas = await sharp({
       create: {
         width: 1024,
-        height: 1024 * atlasFrames.length,
+        height: atlasHeight,
         channels: 4,
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       }
     })
-    .composite(atlasFrames.map((frame, i) => ({
-      input: await frame.toBuffer(),
-      top: i * 1024,
-      left: 0
-    })))
+    .composite(compositeOps)
     .toBuffer();
 
     // Upload atlas
@@ -184,12 +214,12 @@ export async function POST(req) {
       atlas: `/sprites/${atlasKey}/atlas.png`
     };
 
-    results.forEach(({ motion, url1024, url512, url256 }, i) => {
-      const config = getMotionConfig(motion);
-      meta.frames[motion] = {
+    flatResults.forEach(({ motion, direction, url1024, url512, url256 }, i) => {
+      const key = direction ? `${motion}_${direction}` : motion;
+      meta.frames[key] = {
         row: i,
-        frames: config.frames,
-        fps: config.fps,
+        frames: getMotionFrames(motion),
+        fps: getMotionFPS(motion),
         urls: {
           '1024': url1024,
           '512': url512,
